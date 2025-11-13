@@ -26,14 +26,244 @@ AI-powered customer support system with N8N workflow automation, RAG (Retrieval 
 - 8GB+ RAM
 - 10GB+ Disk space
 
-### Installation
+### 💻 Platform-Specific Installation
 
+<details>
+<summary><b>🪟 Windows Installation</b></summary>
+
+#### Prerequisites
+
+1. **Install Docker Desktop for Windows**
+   - Download from: https://www.docker.com/products/docker-desktop
+   - Minimum: Windows 10 64-bit (Pro, Enterprise, or Education)
+   - WSL2 backend is recommended for better performance
+
+2. **Enable WSL2 (Recommended)**
+   ```powershell
+   # Run in PowerShell as Administrator
+   wsl --install
+   wsl --set-default-version 2
+   ```
+
+3. **Install Git for Windows** (if not already installed)
+   - Download from: https://git-scm.com/download/win
+
+#### Installation Steps
+
+**Option 1: Using Git Bash (Recommended)**
 ```bash
-# 1. Run setup script
+# Clone the repository
+git clone <repository-url>
+cd customer_assistant_agent
+
+# Run setup script
 ./setup.sh
 
-# 2. Open in browser
-# http://localhost
+# Open in browser
+start http://localhost/customer-chat
+```
+
+**Option 2: Using PowerShell**
+```powershell
+# Clone the repository
+git clone <repository-url>
+cd customer_assistant_agent
+
+# Start all services
+docker-compose up -d --build
+
+# Wait for services to be ready (30-60 seconds)
+docker-compose ps
+
+# Open in browser
+Start-Process "http://localhost/customer-chat"
+```
+
+#### Verify Installation
+```powershell
+# Check all containers are running
+docker-compose ps
+
+# Should show 9 containers running
+```
+
+#### Troubleshooting Windows
+
+- **Port conflicts**: If port 80 is in use, stop IIS or other web servers
+- **WSL2 memory**: Limit Docker memory in Docker Desktop settings
+- **Slow performance**: Enable WSL2 backend in Docker Desktop settings
+- **Permission issues**: Run Docker Desktop as Administrator
+
+</details>
+
+<details>
+<summary><b>🐧 Linux (Ubuntu/Debian) Installation</b></summary>
+
+#### Prerequisites
+
+1. **Install Docker Engine**
+   ```bash
+   # Update package index
+   sudo apt-get update
+
+   # Install dependencies
+   sudo apt-get install -y \
+       ca-certificates \
+       curl \
+       gnupg \
+       lsb-release
+
+   # Add Docker's official GPG key
+   sudo mkdir -p /etc/apt/keyrings
+   curl -fsSL https://download.docker.com/linux/ubuntu/gpg | \
+       sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+
+   # Set up repository
+   echo \
+     "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+     https://download.docker.com/linux/ubuntu \
+     $(lsb_release -cs) stable" | \
+     sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+   # Install Docker
+   sudo apt-get update
+   sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
+   ```
+
+2. **Install Docker Compose**
+   ```bash
+   # Docker Compose is included with docker-compose-plugin
+   # Or install standalone version:
+   sudo curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" \
+       -o /usr/local/bin/docker-compose
+   sudo chmod +x /usr/local/bin/docker-compose
+   ```
+
+3. **Add user to docker group (optional)**
+   ```bash
+   sudo usermod -aG docker $USER
+   newgrp docker
+   # Log out and log back in for this to take effect
+   ```
+
+#### Installation Steps
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd customer_assistant_agent
+
+# Make setup script executable
+chmod +x setup.sh
+
+# Run setup script
+./setup.sh
+
+# Open in browser
+xdg-open http://localhost/customer-chat
+```
+
+#### Verify Installation
+```bash
+# Check Docker is running
+sudo systemctl status docker
+
+# Check all containers
+docker-compose ps
+
+# Should show 9 containers running
+```
+
+#### Troubleshooting Linux
+
+- **Permission denied**: Add user to docker group or use `sudo`
+- **Port conflicts**: Check with `sudo netstat -tulpn | grep :80`
+- **Firewall issues**: Allow ports 80, 3000, 5678, 5432, 27017, 6333
+  ```bash
+  sudo ufw allow 80/tcp
+  sudo ufw allow 5678/tcp
+  ```
+
+</details>
+
+<details>
+<summary><b>🍎 macOS Installation</b></summary>
+
+#### Prerequisites
+
+1. **Install Docker Desktop for Mac**
+   - Download from: https://www.docker.com/products/docker-desktop
+   - Minimum: macOS 10.15 or newer
+   - For M1/M2 Macs: Use Apple Silicon version
+
+2. **Install Homebrew** (optional, for easier management)
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   ```
+
+3. **Install Git** (if not already installed)
+   ```bash
+   # Using Homebrew
+   brew install git
+
+   # Or download from
+   # https://git-scm.com/download/mac
+   ```
+
+#### Installation Steps
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd customer_assistant_agent
+
+# Make setup script executable
+chmod +x setup.sh
+
+# Run setup script
+./setup.sh
+
+# Open in browser
+open http://localhost/customer-chat
+```
+
+#### Verify Installation
+```bash
+# Check all containers are running
+docker-compose ps
+
+# Should show 9 containers running
+```
+
+#### Troubleshooting macOS
+
+- **Docker not starting**: Check Docker Desktop is running in menu bar
+- **Port conflicts**: Stop other services using port 80
+  ```bash
+  sudo lsof -i :80
+  ```
+- **M1/M2 performance**: Enable "Use Rosetta for x86/amd64 emulation" in Docker Desktop settings
+- **Resource limits**: Increase Docker memory/CPU in Docker Desktop preferences
+
+</details>
+
+### 🚀 Quick Start (All Platforms)
+
+After Docker is installed, these commands work on all platforms:
+
+```bash
+# 1. Clone repository
+git clone <repository-url>
+cd customer_assistant_agent
+
+# 2. Start all services
+docker-compose up -d --build
+
+# 3. Wait for services (30-60 seconds)
+docker-compose ps
+
+# 4. Open in browser
+# http://localhost/customer-chat
 ```
 
 ## 🌐 Service URLs
@@ -275,6 +505,83 @@ npm start
 ```
 
 ## 🐛 Troubleshooting
+
+### 📊 Platform Comparison
+
+| Feature | Windows | Linux | macOS |
+|---------|---------|-------|-------|
+| **Docker Type** | Docker Desktop | Docker Engine | Docker Desktop |
+| **Performance** | Good (with WSL2) | Excellent | Good (M1/M2: Excellent) |
+| **Setup Complexity** | Medium | Easy | Easy |
+| **Resource Usage** | Higher | Lower | Medium |
+| **Native Support** | Via WSL2 | Native | Via VM |
+| **Recommended For** | Development | Production | Development |
+
+### 🔍 Common Issues (All Platforms)
+
+#### Services Not Starting
+
+```bash
+# Check Docker is running
+docker --version
+docker-compose --version
+
+# Check service status
+docker-compose ps
+
+# View logs for errors
+docker-compose logs -f
+
+# Restart all services
+docker-compose restart
+```
+
+#### Port Conflicts
+
+**Check which process is using a port:**
+
+```bash
+# Windows (PowerShell)
+netstat -ano | findstr :80
+
+# Linux/macOS
+sudo lsof -i :80
+# or
+sudo netstat -tulpn | grep :80
+```
+
+**Common port conflicts:**
+- Port 80: IIS, Apache, Nginx (stop other web servers)
+- Port 5432: Other PostgreSQL instances
+- Port 27017: Other MongoDB instances
+- Port 5678: Other N8N instances
+
+#### Memory Issues
+
+```bash
+# Check container resource usage
+docker stats
+
+# Clean up unused resources
+docker system prune -a --volumes
+
+# Increase Docker memory limit:
+# - Windows/macOS: Docker Desktop → Settings → Resources
+# - Linux: Edit /etc/docker/daemon.json
+```
+
+#### Network Issues
+
+```bash
+# Recreate network
+docker-compose down
+docker network prune
+docker-compose up -d
+
+# Check network connectivity
+docker-compose exec backend ping postgres
+docker-compose exec backend ping mongodb
+```
 
 ### Create Qdrant Collection
 
