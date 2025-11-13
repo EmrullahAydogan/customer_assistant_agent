@@ -148,7 +148,7 @@ services:
       context: ./frontend/product-management
       dockerfile: Dockerfile
       args:
-        - REACT_APP_API_URL=http://localhost:3000/api
+        - REACT_APP_API_URL=http://localhost/api
     container_name: frontend_product_management
     ports:
       - "3001:80"
@@ -167,7 +167,7 @@ services:
       context: ./frontend/chat-monitor
       dockerfile: Dockerfile
       args:
-        - REACT_APP_API_URL=http://localhost:3000/api
+        - REACT_APP_API_URL=http://localhost/api
     container_name: frontend_chat_monitor
     ports:
       - "3002:80"
