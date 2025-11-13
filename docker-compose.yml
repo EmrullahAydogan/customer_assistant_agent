@@ -178,6 +178,23 @@ services:
     restart: unless-stopped
 
   # ============================================
+  # FRONTEND - Customer Chat Interface
+  # ============================================
+
+  frontend_customer_chat:
+    build:
+      context: ./frontend/customer-chat
+      dockerfile: Dockerfile
+    container_name: frontend_customer_chat
+    ports:
+      - "3003:80"
+    networks:
+      - app_network
+    depends_on:
+      - n8n
+    restart: unless-stopped
+
+  # ============================================
   # NGINX - Reverse Proxy
   # ============================================
 
@@ -194,6 +211,7 @@ services:
       - backend
       - frontend_products
       - frontend_chat
+      - frontend_customer_chat
     restart: unless-stopped
 
 volumes:

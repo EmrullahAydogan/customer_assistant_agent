@@ -8,7 +8,7 @@ AI-powered customer support system with N8N workflow automation, RAG (Retrieval 
 - **RAG System**: Semantic search with Qdrant vector database
 - **Multi-Database**: PostgreSQL (chat), MongoDB (products), Qdrant (vectors)
 - **N8N Workflows**: Automated data ingestion and chat endpoint
-- **Dual Web UI**: Product management and chat monitoring dashboards
+- **Multiple Web UIs**: Customer chat interface, product management, and chat monitoring dashboards
 - **Docker Compose**: One-command deployment
 - **AI Agent**: Powered by Google Gemini
 - **Analytics**: Real-time statistics and sentiment analysis
@@ -41,8 +41,9 @@ AI-powered customer support system with N8N workflow automation, RAG (Retrieval 
 After installation, access these services:
 
 - **Main Portal**: http://localhost
-- **Product Management**: http://localhost/products
-- **Chat Monitor**: http://localhost/chat
+- **Customer Chat**: http://localhost/customer-chat (for customers)
+- **Product Management**: http://localhost/products (admin)
+- **Chat Monitor**: http://localhost/chat (admin)
 - **Backend API**: http://localhost:3000
 - **N8N**: http://localhost:5678 (admin/n8n_admin_2024)
 - **PostgreSQL**: localhost:5432 (chat_user/chat_password_2024)
@@ -64,15 +65,16 @@ customer_assistant_agent/
 │       ├── config/
 │       └── routes/
 ├── frontend/
-│   ├── product-management/      # Product management UI
-│   └── chat-monitor/            # Chat monitoring UI
+│   ├── customer-chat/           # Customer chat interface (standalone HTML)
+│   ├── product-management/      # Product management UI (React)
+│   └── chat-monitor/            # Chat monitoring UI (React)
 ├── n8n/workflows/               # N8N workflow files
 └── nginx/nginx.conf             # Reverse proxy config
 ```
 
 ## 🐳 Docker Architecture
 
-### Services Running in Docker (8 Containers)
+### Services Running in Docker (9 Containers)
 
 All application components run in Docker containers:
 
@@ -85,6 +87,7 @@ All application components run in Docker containers:
 | **backend** | backend_api | Express.js REST API server | 3000 |
 | **frontend_products** | frontend_product_management | Product Management UI (React + Nginx) | 3001 |
 | **frontend_chat** | frontend_chat_monitor | Chat Monitor UI (React + Nginx) | 3002 |
+| **frontend_customer_chat** | frontend_customer_chat | Customer Chat Interface (HTML + Nginx) | 3003 |
 | **nginx** | nginx_proxy | Reverse proxy (main entry point) | 80 |
 
 ### Docker Volumes (Persistent Data)
@@ -107,7 +110,7 @@ Data persists across container restarts:
 
 Everything below starts automatically with `docker-compose up -d`:
 
-- All 8 services (databases, backend, frontends, N8N)
+- All 9 services (databases, backend, frontends, N8N)
 - Database initialization scripts run on first start
 - Network configuration and service dependencies
 - Health checks and automatic restarts
@@ -191,8 +194,9 @@ curl -X POST http://localhost:5678/webhook/chat \
   }'
 
 # 7. Access UIs
-# - Product Management: http://localhost/products
-# - Chat Monitor: http://localhost/chat
+# - Customer Chat: http://localhost/customer-chat (for customers)
+# - Product Management: http://localhost/products (admin)
+# - Chat Monitor: http://localhost/chat (admin)
 ```
 
 ## 🔧 N8N Workflows
@@ -302,10 +306,25 @@ curl http://localhost:6333/healthz
 
 ## 📝 Example Usage
 
-1. **Add Product**: http://localhost/products → "+ New Product"
+1. **Add Product**: http://localhost/products → "+ New Product" (admin)
 2. **Load Data**: Run data ingestion workflow in N8N
-3. **Test Chat**: Send request to webhook or test via UI
-4. **View Stats**: http://localhost/chat → Dashboard
+3. **Customer Chat**: http://localhost/customer-chat → Start conversation with AI (customers)
+4. **View Stats**: http://localhost/chat → Monitor conversations and analytics (admin)
+
+### Customer Chat Interface Features
+
+The customer chat interface (`http://localhost/customer-chat`) provides:
+
+- **Real-time AI Chat**: Direct conversation with AI assistant powered by Google Gemini
+- **Markdown Support**: Rich text formatting in AI responses
+- **Session Management**: Automatic conversation ID tracking and persistence
+- **Statistics Dashboard**: Real-time message count, token usage, and response time metrics
+- **Export Functionality**: Download conversation history in JSON, TXT, or CSV formats
+- **Customer Metadata**: Configure customer info, platform, category, and priority
+- **Local Storage**: Conversations persist across page refreshes
+- **Typing Indicators**: Visual feedback during AI response generation
+
+The interface directly connects to the N8N webhook endpoint for real-time chat functionality.
 
 ## 🔄 Commands
 
