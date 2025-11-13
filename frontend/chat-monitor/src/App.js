@@ -25,8 +25,8 @@ function DashboardPage() {
     }
   };
 
-  if (loading) return <div className="loading">Yükleniyor...</div>;
-  if (!analytics) return <div className="loading">Veri yüklenemedi</div>;
+  if (loading) return <div className="loading">Loading...</div>;
+  if (!analytics) return <div className="loading">Failed to load data</div>;
 
   return (
     <div className="page">
@@ -35,38 +35,38 @@ function DashboardPage() {
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-value">{analytics.totalConversations}</div>
-          <div className="stat-label">Toplam Görüşme</div>
+          <div className="stat-label">Total Conversations</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{analytics.activeConversations}</div>
-          <div className="stat-label">Aktif Görüşme</div>
+          <div className="stat-label">Active Conversations</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{analytics.totalMessages}</div>
-          <div className="stat-label">Toplam Mesaj</div>
+          <div className="stat-label">Total Messages</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{analytics.avgSatisfactionScore}/5</div>
-          <div className="stat-label">Ortalama Memnuniyet</div>
+          <div className="stat-label">Avg Satisfaction</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{analytics.avgResponseTime}s</div>
-          <div className="stat-label">Ortalama Yanıt Süresi</div>
+          <div className="stat-label">Avg Response Time</div>
         </div>
         <div className="stat-card">
           <div className="stat-value">{analytics.tokensUsedToday}</div>
-          <div className="stat-label">Bugün Kullanılan Token</div>
+          <div className="stat-label">Tokens Used Today</div>
         </div>
       </div>
 
       <div className="dashboard-row">
         <div className="dashboard-card">
-          <h3>Duygu Analizi</h3>
+          <h3>Sentiment Analysis</h3>
           <div className="sentiment-list">
             {analytics.sentimentDistribution.map(s => (
               <div key={s.sentiment} className="sentiment-item">
                 <span className={`sentiment-badge sentiment-${s.sentiment}`}>
-                  {s.sentiment === 'positive' ? 'Pozitif' : s.sentiment === 'negative' ? 'Negatif' : 'Nötr'}
+                  {s.sentiment === 'positive' ? 'Positive' : s.sentiment === 'negative' ? 'Negative' : 'Neutral'}
                 </span>
                 <span className="sentiment-count">{s.count}</span>
               </div>
@@ -75,7 +75,7 @@ function DashboardPage() {
         </div>
 
         <div className="dashboard-card">
-          <h3>Platform Dağılımı</h3>
+          <h3>Platform Distribution</h3>
           <div className="platform-list">
             {analytics.platformDistribution.map(p => (
               <div key={p.platform} className="platform-item">
@@ -87,7 +87,7 @@ function DashboardPage() {
         </div>
 
         <div className="dashboard-card">
-          <h3>Kategori Dağılımı</h3>
+          <h3>Category Distribution</h3>
           <div className="category-list">
             {analytics.categoryDistribution.slice(0, 5).map(c => (
               <div key={c.category} className="category-item">
@@ -128,22 +128,22 @@ function ConversationsPage() {
     }
   };
 
-  if (loading) return <div className="loading">Yükleniyor...</div>;
+  if (loading) return <div className="loading">Loading...</div>;
 
   return (
     <div className="page">
       <div className="page-header">
-        <h2>Görüşmeler</h2>
+        <h2>Conversations</h2>
         <div className="filters">
           <select value={filter.status} onChange={(e) => setFilter({...filter, status: e.target.value})}>
-            <option value="">Tüm Durumlar</option>
-            <option value="active">Aktif</option>
-            <option value="completed">Tamamlanmış</option>
+            <option value="">Tüm Statuslar</option>
+            <option value="active">Active</option>
+            <option value="completed">Completed</option>
           </select>
           <select value={filter.platform} onChange={(e) => setFilter({...filter, platform: e.target.value})}>
-            <option value="">Tüm Platformlar</option>
+            <option value="">All Platforms</option>
             <option value="web">Web</option>
-            <option value="mobile">Mobil</option>
+            <option value="mobile">Mobile</option>
             <option value="whatsapp">WhatsApp</option>
           </select>
         </div>
@@ -153,14 +153,14 @@ function ConversationsPage() {
         <table>
           <thead>
             <tr>
-              <th>Müşteri</th>
+              <th>Customer</th>
               <th>Platform</th>
               <th>Kategori</th>
-              <th>Durum</th>
-              <th>Duygu</th>
-              <th>Mesaj</th>
-              <th>Memnuniyet</th>
-              <th>Tarih</th>
+              <th>Status</th>
+              <th>Sentiment</th>
+              <th>Messages</th>
+              <th>Satisfaction</th>
+              <th>Date</th>
             </tr>
           </thead>
           <tbody>
@@ -192,7 +192,7 @@ function App() {
           <h1>Chat Monitor</h1>
           <ul>
             <li><Link to="/">Dashboard</Link></li>
-            <li><Link to="/conversations">Görüşmeler</Link></li>
+            <li><Link to="/conversations">Conversations</Link></li>
           </ul>
         </nav>
         <main className="main-content">

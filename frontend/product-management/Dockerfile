@@ -18,6 +18,10 @@ RUN npm ci
 COPY public ./public
 COPY src ./src
 
+# Accept build argument
+ARG REACT_APP_API_URL
+ENV REACT_APP_API_URL=$REACT_APP_API_URL
+
 # Build the app
 RUN npm run build
 

@@ -58,7 +58,7 @@ function ProductsPage() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
+    if (window.confirm('Are you sure you want to delete this product?')) {
       try {
         await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
         fetchData();
@@ -68,14 +68,14 @@ function ProductsPage() {
     }
   };
 
-  if (loading) return <div className="loading">Yükleniyor...</div>;
+  if (loading) return <div className="loading">Loading...</div>;
 
   return (
     <div className="page">
       <div className="page-header">
-        <h2>Ürün Yönetimi</h2>
+        <h2>Product Management</h2>
         <button onClick={() => setShowForm(!showForm)} className="btn-primary">
-          {showForm ? 'İptal' : '+ Yeni Ürün'}
+          {showForm ? 'Cancel' : '+ New Product'}
         </button>
       </div>
 
@@ -85,14 +85,14 @@ function ProductsPage() {
             <div className="form-group">
               <label>Marka *</label>
               <select required value={formData.brandId} onChange={(e) => setFormData({...formData, brandId: e.target.value})}>
-                <option value="">Seçiniz</option>
+                <option value="">Select</option>
                 {brands.map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
               </select>
             </div>
             <div className="form-group">
-              <label>Kategori *</label>
+              <label>Category *</label>
               <select required value={formData.categoryId} onChange={(e) => setFormData({...formData, categoryId: e.target.value})}>
-                <option value="">Seçiniz</option>
+                <option value="">Select</option>
                 {categories.map(c => <option key={c._id} value={c._id}>{c.name}</option>)}
               </select>
             </div>
@@ -103,17 +103,17 @@ function ProductsPage() {
               <input required type="text" value={formData.modelCode} onChange={(e) => setFormData({...formData, modelCode: e.target.value})} />
             </div>
             <div className="form-group">
-              <label>Ürün Adı *</label>
+              <label>Product Name *</label>
               <input required type="text" value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})} />
             </div>
           </div>
           <div className="form-group">
-            <label>Açıklama</label>
+            <label>Description</label>
             <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows="3"></textarea>
           </div>
           <div className="form-row">
             <div className="form-group">
-              <label>Ürün Tipi</label>
+              <label>Product Type</label>
               <input type="text" value={formData.productType} onChange={(e) => setFormData({...formData, productType: e.target.value})} placeholder="Manuel, Dijital, WiFi..." />
             </div>
             <div className="form-group">
@@ -125,7 +125,7 @@ function ProductsPage() {
               <input type="number" step="0.01" value={formData.price} onChange={(e) => setFormData({...formData, price: e.target.value})} />
             </div>
           </div>
-          <button type="submit" className="btn-primary">Kaydet</button>
+          <button type="submit" className="btn-primary">Save</button>
         </form>
       )}
 
@@ -134,9 +134,9 @@ function ProductsPage() {
           <thead>
             <tr>
               <th>Model Kodu</th>
-              <th>Ürün Adı</th>
+              <th>Product Name</th>
               <th>Marka</th>
-              <th>Kategori</th>
+              <th>Category</th>
               <th>Tip</th>
               <th>Güç</th>
               <th>Fiyat</th>
@@ -154,7 +154,7 @@ function ProductsPage() {
                 <td>{p.powerWatt}W</td>
                 <td>{p.price} TRY</td>
                 <td>
-                  <button onClick={() => handleDelete(p._id)} className="btn-danger btn-sm">Sil</button>
+                  <button onClick={() => handleDelete(p._id)} className="btn-danger btn-sm">Delete</button>
                 </td>
               </tr>
             ))}
@@ -193,17 +193,17 @@ function BrandsPage() {
 
   return (
     <div className="page">
-      <h2>Marka Yönetimi</h2>
+      <h2>Brand Management</h2>
       <form onSubmit={handleSubmit} className="form-card">
         <div className="form-group">
-          <label>Marka Adı *</label>
+          <label>Brand Name *</label>
           <input required type="text" value={newBrand.name} onChange={(e) => setNewBrand({...newBrand, name: e.target.value})} />
         </div>
         <div className="form-group">
-          <label>Açıklama</label>
+          <label>Description</label>
           <input type="text" value={newBrand.description} onChange={(e) => setNewBrand({...newBrand, description: e.target.value})} />
         </div>
-        <button type="submit" className="btn-primary">Ekle</button>
+        <button type="submit" className="btn-primary">Add</button>
       </form>
       <div className="card-grid">
         {brands.map(b => (
@@ -233,15 +233,15 @@ function ErrorCodesPage() {
 
   return (
     <div className="page">
-      <h2>Hata Kodları</h2>
+      <h2>Error Codes</h2>
       <div className="table-container">
         <table>
           <thead>
             <tr>
-              <th>Hata Kodu</th>
+              <th>Error Code</th>
               <th>Ad</th>
-              <th>Açıklama</th>
-              <th>Önem</th>
+              <th>Description</th>
+              <th>Severity</th>
               <th>Tip</th>
             </tr>
           </thead>
@@ -268,11 +268,11 @@ function App() {
     <Router>
       <div className="app">
         <nav className="sidebar">
-          <h1>Ürün Yönetimi</h1>
+          <h1>Product Management</h1>
           <ul>
-            <li><Link to="/">Ürünler</Link></li>
-            <li><Link to="/brands">Markalar</Link></li>
-            <li><Link to="/error-codes">Hata Kodları</Link></li>
+            <li><Link to="/">Products</Link></li>
+            <li><Link to="/brands">Brands</Link></li>
+            <li><Link to="/error-codes">Error Codes</Link></li>
           </ul>
         </nav>
         <main className="main-content">
