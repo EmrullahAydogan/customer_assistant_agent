@@ -65,29 +65,29 @@ db.createCollection('brands', {
 // Insert sample brands
 db.brands.insertMany([
   {
-    name: 'IVIGO',
-    description: 'Panel konvektör, havlu ısıtıcı, fanlı ısıtıcı ve ayak ısıtıcı ürünleri',
+    name: 'THERMOTECH',
+    description: 'Electric heaters, towel warmers, fan heaters and foot warmers',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    name: 'MASTAŞ',
-    description: 'Su bazlı panel radyatör ve havlu radyatör sistemleri',
+    name: 'HEATFLOW',
+    description: 'Water-based panel radiators and towel radiator systems',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    name: 'SOLARIS',
-    description: 'Panel konvektör sistemleri',
+    name: 'WARMLINE',
+    description: 'Electric heating panel systems',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    name: 'POTPRESSO',
-    description: 'Türk kahve makineleri',
+    name: 'BREWMASTER',
+    description: 'Premium coffee machines',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -133,36 +133,36 @@ db.createCollection('product_categories', {
 // Insert sample categories
 db.product_categories.insertMany([
   {
-    name: 'Panel Konvektör',
-    description: 'Elektrikli panel tipi konvektör ısıtıcılar',
+    name: 'Electric Heater',
+    description: 'Electric panel convector heaters',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    name: 'Havlu Isıtıcı',
-    description: 'Elektrikli ve su bazlı havlu ısıtıcıları',
+    name: 'Towel Warmer',
+    description: 'Electric and water-based towel warmers',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    name: 'Fanlı Isıtıcı',
-    description: 'Fan destekli konvektör ısıtıcılar',
+    name: 'Fan Heater',
+    description: 'Fan-assisted convector heaters',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    name: 'Ayak Isıtıcı',
-    description: 'Masa altı ayak ısıtıcı sistemleri',
+    name: 'Foot Warmer',
+    description: 'Under-desk foot warming systems',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    name: 'Kahve Makinesi',
-    description: 'Türk kahve makineleri',
+    name: 'Coffee Machine',
+    description: 'Premium coffee brewing machines',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -236,49 +236,49 @@ db.createCollection('products', {
 });
 
 // Get IDs for relationships
-const ivigoBrand = db.brands.findOne({name: 'IVIGO'});
-const panelCategory = db.product_categories.findOne({name: 'Panel Konvektör'});
+const thermotechBrand = db.brands.findOne({name: 'THERMOTECH'});
+const heaterCategory = db.product_categories.findOne({name: 'Electric Heater'});
 
 // Insert sample products
 db.products.insertMany([
   {
-    brandId: ivigoBrand._id,
-    categoryId: panelCategory._id,
-    modelCode: 'EPK4550M05',
-    name: 'IVIGO Panel Konvektör Manuel 500W',
-    description: 'Panel konvektör, mekanik termostat, 500W',
-    productType: 'Manuel',
+    brandId: thermotechBrand._id,
+    categoryId: heaterCategory._id,
+    modelCode: 'TH-500M',
+    name: 'THERMOTECH Electric Heater Manual 500W',
+    description: 'Electric panel heater with mechanical thermostat, 500W',
+    productType: 'Manual',
     powerWatt: 500,
-    price: NumberDecimal("1299.00"),
-    currency: 'TRY',
+    price: NumberDecimal("129.99"),
+    currency: 'USD',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    brandId: ivigoBrand._id,
-    categoryId: panelCategory._id,
-    modelCode: 'EPK4550E10',
-    name: 'IVIGO Panel Konvektör Dijital 1000W',
-    description: 'Panel konvektör, elektronik oda sıcaklık kontrolü, 1000W',
-    productType: 'Dijital',
+    brandId: thermotechBrand._id,
+    categoryId: heaterCategory._id,
+    modelCode: 'TH-1000D',
+    name: 'THERMOTECH Electric Heater Digital 1000W',
+    description: 'Electric panel heater with digital room temperature control, 1000W',
+    productType: 'Digital',
     powerWatt: 1000,
-    price: NumberDecimal("1899.00"),
-    currency: 'TRY',
+    price: NumberDecimal("189.99"),
+    currency: 'USD',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
-    brandId: ivigoBrand._id,
-    categoryId: panelCategory._id,
-    modelCode: 'EPK4590E25-W',
-    name: 'IVIGO Panel Konvektör WiFi 2500W',
-    description: 'Panel konvektör, WiFi akıllı kontrol, 2500W',
+    brandId: thermotechBrand._id,
+    categoryId: heaterCategory._id,
+    modelCode: 'TH-2500W',
+    name: 'THERMOTECH Electric Heater WiFi 2500W',
+    description: 'Smart electric panel heater with WiFi control, 2500W',
     productType: 'WiFi',
     powerWatt: 2500,
-    price: NumberDecimal("3499.00"),
-    currency: 'TRY',
+    price: NumberDecimal("349.99"),
+    currency: 'USD',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -359,7 +359,7 @@ db.createCollection('error_codes', {
         },
         severity: {
           bsonType: 'string',
-          enum: ['Düşük', 'Orta', 'Yüksek', 'Kritik'],
+          enum: ['Low', 'Medium', 'High', 'Critical'],
           description: 'Error severity level'
         },
         isActive: {
@@ -380,30 +380,30 @@ db.createCollection('error_codes', {
 db.error_codes.insertMany([
   {
     errorCode: 'dE',
-    errorName: 'Devrilme Hatası',
-    description: 'Cihaz devrilme sensörü aktif oldu. Güvenlik nedeniyle cihaz kapandı.',
-    errorType: 'Güvenlik',
-    severity: 'Yüksek',
+    errorName: 'Tilt Error',
+    description: 'Device tilt sensor activated. Unit shut down for safety.',
+    errorType: 'Safety',
+    severity: 'High',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
     errorCode: 'PE',
-    errorName: 'Fiş Isınma Hatası',
-    description: 'Elektrik fişi veya priz aşırı ısındı. Bağlantı problemli.',
-    errorType: 'Elektrik',
-    severity: 'Kritik',
+    errorName: 'Plug Overheating Error',
+    description: 'Electrical plug or outlet overheated. Connection issue detected.',
+    errorType: 'Electrical',
+    severity: 'Critical',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
   },
   {
     errorCode: 'CE',
-    errorName: 'İşlemci Isınma Hatası',
-    description: 'Cihaz iç sıcaklığı aşırı yükseldi.',
-    errorType: 'Donanım',
-    severity: 'Yüksek',
+    errorName: 'CPU Overheating Error',
+    description: 'Internal device temperature exceeded safe limits.',
+    errorType: 'Hardware',
+    severity: 'High',
     isActive: true,
     createdAt: new Date(),
     updatedAt: new Date()
@@ -602,7 +602,7 @@ db.createCollection('documents', {
         },
         documentType: {
           bsonType: 'string',
-          enum: ['Kullanım Kılavuzu', 'Montaj Kılavuzu', 'Teknik Doküman', 'Garanti Belgesi']
+          enum: ['User Manual', 'Installation Guide', 'Technical Document', 'Warranty Certificate']
         },
         version: {
           bsonType: 'string'
@@ -685,7 +685,7 @@ db.createCollection('instructions', {
         },
         instructionType: {
           bsonType: 'string',
-          enum: ['Kurulum', 'Kullanım', 'Bakım', 'Temizlik', 'Sorun Giderme']
+          enum: ['Installation', 'Usage', 'Maintenance', 'Cleaning', 'Troubleshooting']
         },
         stepNumber: {
           bsonType: 'int'
@@ -735,7 +735,7 @@ db.createCollection('safety_warnings', {
         },
         warningType: {
           bsonType: 'string',
-          enum: ['Genel', 'Elektrik', 'Yangın', 'Yaralanma', 'Çocuk Güvenliği']
+          enum: ['General', 'Electrical', 'Fire', 'Injury', 'Child Safety']
         },
         title: {
           bsonType: 'string'
@@ -745,7 +745,7 @@ db.createCollection('safety_warnings', {
         },
         severity: {
           bsonType: 'string',
-          enum: ['Düşük', 'Orta', 'Yüksek', 'Kritik']
+          enum: ['Low', 'Medium', 'High', 'Critical']
         },
         iconUrl: {
           bsonType: 'string'

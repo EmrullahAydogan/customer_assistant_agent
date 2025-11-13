@@ -286,8 +286,8 @@ BEGIN
     -- Insert sample messages
     INSERT INTO messages (conversation_id, role, content, model_used, tokens_used, response_time_ms)
     VALUES
-        (sample_conv_id, 'user', 'Merhaba, IVIGO panel konvektör hakkında bilgi alabilir miyim?', NULL, NULL, NULL),
-        (sample_conv_id, 'assistant', 'Merhaba! Tabii ki, IVIGO panel konvektör modellerimiz hakkında size yardımcı olabilirim. Hangi özelliklerle ilgileniyorsunuz?', 'gemini-2.5-flash', 150, 1200);
+        (sample_conv_id, 'user', 'Merhaba, THERMOTECH elektrikli ısıtıcı hakkında bilgi alabilir miyim?', NULL, NULL, NULL),
+        (sample_conv_id, 'assistant', 'Merhaba! Tabii ki, THERMOTECH elektrikli ısıtıcı modellerimiz hakkında size yardımcı olabilirim. Hangi özelliklerle ilgileniyorsunuz?', 'gemini-2.5-flash', 150, 1200);
 END $$;
 
 -- Insert sample daily stats

@@ -1,44 +1,44 @@
 # 🤖 Customer Assistant Agent
 
-Yapay zeka destekli müşteri destek sistemi. N8N workflow otomasyonu, RAG (Retrieval Augmented Generation) ve çoklu veritabanı mimarisi ile güçlendirilmiş tam kapsamlı bir çözüm.
+AI-powered customer support system with N8N workflow automation, RAG (Retrieval Augmented Generation), and multi-database architecture.
 
-## 🎯 Özellikler
+## 🎯 Features
 
-### ✨ Ana Özellikler
-- **RAG Sistemi**: Qdrant vector database ile semantik arama
-- **Çoklu Veritabanı**: PostgreSQL (chat), MongoDB (ürünler), Qdrant (vektör)
-- **N8N Workflow**: Otomatik veri yükleme ve chat endpoint'i
-- **Dual Web UI**: Ürün yönetimi ve chat takip arayüzleri
-- **Docker Compose**: Tek komutla tüm sistemi çalıştırma
-- **AI Agent**: Google Gemini ile güçlendirilmiş yanıtlar
-- **Analytics**: Gerçek zamanlı istatistikler ve sentiment analizi
+### ✨ Key Features
+- **RAG System**: Semantic search with Qdrant vector database
+- **Multi-Database**: PostgreSQL (chat), MongoDB (products), Qdrant (vectors)
+- **N8N Workflows**: Automated data ingestion and chat endpoint
+- **Dual Web UI**: Product management and chat monitoring dashboards
+- **Docker Compose**: One-command deployment
+- **AI Agent**: Powered by Google Gemini
+- **Analytics**: Real-time statistics and sentiment analysis
 
-### 📊 Veritabanları
-1. **PostgreSQL**: Chat geçmişi, konuşmalar, analytics
-2. **MongoDB**: Ürün kataloğu, markalar, hata kodları
-3. **Qdrant**: Vector embeddings, semantik arama
+### 📊 Databases
+1. **PostgreSQL**: Chat history, conversations, analytics
+2. **MongoDB**: Product catalog, brands, error codes
+3. **Qdrant**: Vector embeddings, semantic search
 
-## 🚀 Hızlı Başlangıç
+## 🚀 Quick Start
 
-### Gereksinimler
+### Requirements
 - Docker 20.10+
 - Docker Compose 2.0+
 - 8GB+ RAM
-- 10GB+ Disk alanı
+- 10GB+ Disk space
 
-### Kurulum
+### Installation
 
 ```bash
-# 1. Setup script'ini çalıştırın
+# 1. Run setup script
 ./setup.sh
 
-# 2. Tarayıcıda açın
+# 2. Open in browser
 # http://localhost
 ```
 
 ## 🌐 Service URLs
 
-Kurulum sonrası şu adreslere erişebilirsiniz:
+After installation, access these services:
 
 - **Main Portal**: http://localhost
 - **Product Management**: http://localhost/products
@@ -49,13 +49,13 @@ Kurulum sonrası şu adreslere erişebilirsiniz:
 - **MongoDB**: localhost:27017 (admin/mongo_password_2024)
 - **Qdrant**: http://localhost:6333
 
-## 📁 Proje Yapısı
+## 📁 Project Structure
 
 ```
 customer_assistant_agent/
-├── docker-compose.yml           # Ana Docker yapılandırması
-├── setup.sh                     # Otomatik kurulum
-├── database/                    # DB init dosyaları
+├── docker-compose.yml           # Main Docker configuration
+├── setup.sh                     # Automated setup script
+├── database/                    # DB initialization files
 │   ├── postgres/init.sql
 │   └── mongodb/init-mongo.js
 ├── backend/                     # Express.js API
@@ -64,29 +64,29 @@ customer_assistant_agent/
 │       ├── config/
 │       └── routes/
 ├── frontend/
-│   ├── product-management/      # Ürün yönetimi UI
-│   └── chat-monitor/            # Chat takip UI
-├── n8n/workflows/               # N8N workflow dosyaları
-└── nginx/nginx.conf             # Reverse proxy
+│   ├── product-management/      # Product management UI
+│   └── chat-monitor/            # Chat monitoring UI
+├── n8n/workflows/               # N8N workflow files
+└── nginx/nginx.conf             # Reverse proxy config
 ```
 
 ## 🔧 N8N Workflows
 
 ### 1. Data Ingestion (MongoDB → Qdrant)
 
-MongoDB'den ürün verilerini okuyup Qdrant'a yükler:
+Loads product data from MongoDB into Qdrant:
 
-1. N8N UI'da `n8n/workflows/01-data-ingestion-mongodb.json` import edin
-2. Credentials yapılandırın:
+1. Import `n8n/workflows/01-data-ingestion-mongodb.json` in N8N UI
+2. Configure credentials:
    - MongoDB: `mongodb://admin:mongo_password_2024@mongodb:27017/product_catalog?authSource=admin`
-   - Google Gemini API: [API Key gerekli]
-3. Execute Workflow ile çalıştırın
+   - Google Gemini API: [API Key required]
+3. Run with Execute Workflow
 
 ### 2. Chat Endpoint (Webhook)
 
-Chat API endpoint'i sağlar:
+Provides chat API endpoint:
 
-1. `n8n/workflows/02-chat-endpoint.json` import edin
+1. Import `n8n/workflows/02-chat-endpoint.json`
 2. Webhook URL: `http://localhost:5678/webhook/chat`
 3. Test:
 
@@ -95,7 +95,7 @@ curl -X POST http://localhost:5678/webhook/chat \
   -H "Content-Type: application/json" \
   -d '{
     "customer_name": "Test User",
-    "message": "IVIGO ürünleri hakkında bilgi alabilir miyim?"
+    "message": "Tell me about THERMOTECH heaters"
   }'
 ```
 
@@ -103,30 +103,30 @@ curl -X POST http://localhost:5678/webhook/chat \
 
 ### Chat API
 ```
-GET  /api/chat/conversations      # Tüm görüşmeler
-GET  /api/chat/conversations/:id  # Detaylı görüşme
-GET  /api/chat/messages           # Son mesajlar
-GET  /api/chat/search?q=term      # Arama
+GET  /api/chat/conversations      # List all conversations
+GET  /api/chat/conversations/:id  # Get conversation details
+GET  /api/chat/messages           # Get recent messages
+GET  /api/chat/search?q=term      # Search conversations
 ```
 
 ### Product API
 ```
-GET    /api/products              # Ürün listesi
-POST   /api/products              # Yeni ürün
-PUT    /api/products/:id          # Ürün güncelle
-DELETE /api/products/:id          # Ürün sil
+GET    /api/products              # List products
+POST   /api/products              # Create product
+PUT    /api/products/:id          # Update product
+DELETE /api/products/:id          # Delete product
 
-GET    /api/products/brands       # Markalar
-POST   /api/products/brands       # Yeni marka
+GET    /api/products/brands       # List brands
+POST   /api/products/brands       # Create brand
 
-GET    /api/products/errors/codes # Hata kodları
+GET    /api/products/errors/codes # List error codes
 ```
 
 ### Analytics API
 ```
-GET  /api/analytics/summary       # Özet istatistikler
-GET  /api/analytics/daily?days=30 # Günlük veriler
-GET  /api/analytics/trends        # Trend verileri
+GET  /api/analytics/summary       # Summary statistics
+GET  /api/analytics/daily?days=30 # Daily data
+GET  /api/analytics/trends        # Trend data
 ```
 
 ## 🛠️ Development
@@ -140,14 +140,14 @@ npm run dev
 
 ### Frontend
 ```bash
-cd frontend/product-management  # veya chat-monitor
+cd frontend/product-management  # or chat-monitor
 npm install
 npm start
 ```
 
 ## 🐛 Troubleshooting
 
-### Qdrant Collection Oluşturma
+### Create Qdrant Collection
 
 ```bash
 curl -X PUT http://localhost:6333/collections/rag_docs_gemini_3072_metadata \
@@ -160,12 +160,12 @@ curl -X PUT http://localhost:6333/collections/rag_docs_gemini_3072_metadata \
   }'
 ```
 
-### Logs
+### View Logs
 ```bash
-# Tüm loglar
+# All logs
 docker-compose logs -f
 
-# Belirli servis
+# Specific service
 docker-compose logs -f backend
 ```
 
@@ -175,32 +175,43 @@ curl http://localhost:3000/health
 curl http://localhost:6333/healthz
 ```
 
-## 📝 Örnek Kullanım
+## 📝 Example Usage
 
-1. **Ürün Ekle**: http://localhost/products → "+ Yeni Ürün"
-2. **Veri Yükle**: N8N'de data ingestion workflow'unu çalıştır
-3. **Chat Test**: Webhook'a request gönder veya UI'dan test et
-4. **İstatistikler**: http://localhost/chat → Dashboard
+1. **Add Product**: http://localhost/products → "+ New Product"
+2. **Load Data**: Run data ingestion workflow in N8N
+3. **Test Chat**: Send request to webhook or test via UI
+4. **View Stats**: http://localhost/chat → Dashboard
 
-## 🔄 Komutlar
+## 🔄 Commands
 
 ```bash
-# Servisleri başlat
+# Start services
 docker-compose up -d
 
-# Servisleri durdur
+# Stop services
 docker-compose stop
 
-# Logları izle
+# View logs
 docker-compose logs -f [service]
 
-# Tümünü sil
+# Remove everything
 docker-compose down -v
 ```
 
+## 🏢 Sample Brands
+
+This project uses fictional brands for demonstration:
+
+- **THERMOTECH**: Electric heaters and climate control
+- **HEATFLOW**: Water-based heating systems
+- **WARMLINE**: Panel heating solutions
+- **BREWMASTER**: Coffee brewing equipment
+
+All product names, brands, and specifications are purely fictional and do not represent any real companies or products.
+
 ## 👤 Author
 
-**Emrullah Aydoğan**
+**Your Name**
 
 ## 📄 License
 
@@ -208,4 +219,4 @@ MIT License
 
 ---
 
-**🎉 Başarılar! Sorularınız için issue açın.**
+**🎉 Happy coding! Open an issue for questions.**
