@@ -70,6 +70,131 @@ customer_assistant_agent/
 └── nginx/nginx.conf             # Reverse proxy config
 ```
 
+## 🐳 Docker Architecture
+
+### Services Running in Docker (8 Containers)
+
+All application components run in Docker containers:
+
+| Service | Container Name | Purpose | Port |
+|---------|---------------|---------|------|
+| **postgres** | chat_postgres | PostgreSQL database for chat history | 5432 |
+| **mongodb** | product_mongodb | MongoDB database for product catalog | 27017 |
+| **qdrant** | qdrant_vector_db | Vector database for RAG embeddings | 6333, 6334 |
+| **n8n** | n8n_workflows | Workflow automation engine | 5678 |
+| **backend** | backend_api | Express.js REST API server | 3000 |
+| **frontend_products** | frontend_product_management | Product Management UI (React + Nginx) | 3001 |
+| **frontend_chat** | frontend_chat_monitor | Chat Monitor UI (React + Nginx) | 3002 |
+| **nginx** | nginx_proxy | Reverse proxy (main entry point) | 80 |
+
+### Docker Volumes (Persistent Data)
+
+Data persists across container restarts:
+
+- `postgres_data` - PostgreSQL database files
+- `mongodb_data` - MongoDB database files
+- `qdrant_data` - Vector embeddings and indexes
+- `n8n_data` - N8N workflows and credentials
+
+### Docker Network
+
+- `app_network` (bridge) - All containers communicate through this internal network
+- Container-to-container communication uses service names (e.g., `postgres:5432`, `mongodb:27017`)
+
+## 📦 What's Included vs. Manual Steps
+
+### ✅ Fully Automated (In Docker)
+
+Everything below starts automatically with `docker-compose up -d`:
+
+- All 8 services (databases, backend, frontends, N8N)
+- Database initialization scripts run on first start
+- Network configuration and service dependencies
+- Health checks and automatic restarts
+- Data persistence in Docker volumes
+
+### ⚠️ Manual Configuration Required
+
+After running `./setup.sh`, complete these 3 steps:
+
+#### 1. Create Qdrant Collection
+
+```bash
+curl -X PUT http://localhost:6333/collections/rag_docs_gemini_3072_metadata \
+  -H "Content-Type: application/json" \
+  -d '{
+    "vectors": {
+      "size": 768,
+      "distance": "Cosine"
+    }
+  }'
+```
+
+#### 2. Configure N8N Credentials
+
+Open http://localhost:5678 (admin/n8n_admin_2024) and add:
+
+**MongoDB Credential:**
+- Type: MongoDB
+- Connection String: `mongodb://admin:mongo_password_2024@mongodb:27017/product_catalog?authSource=admin`
+
+**PostgreSQL Credential:**
+- Type: PostgreSQL
+- Host: `postgres`
+- Port: `5432`
+- Database: `chat_database`
+- User: `chat_user`
+- Password: `chat_password_2024`
+
+**Google Gemini API Credential:**
+- Type: Google PaLM API
+- API Key: [Your Gemini API Key from https://ai.google.dev]
+
+#### 3. Import N8N Workflows
+
+In N8N UI:
+1. Click **Import** button
+2. Import `n8n/workflows/01-data-ingestion-mongodb.json`
+3. Import `n8n/workflows/02-chat-endpoint.json`
+4. Activate both workflows
+
+### 🔄 First-Time Setup Checklist
+
+```bash
+# 1. Start all services
+./setup.sh
+
+# 2. Wait for services to be healthy (about 30 seconds)
+docker-compose ps
+
+# 3. Create Qdrant collection
+curl -X PUT http://localhost:6333/collections/rag_docs_gemini_3072_metadata \
+  -H "Content-Type: application/json" \
+  -d '{"vectors": {"size": 768, "distance": "Cosine"}}'
+
+# 4. Configure N8N (via browser at http://localhost:5678)
+# - Add MongoDB, PostgreSQL, and Gemini API credentials
+# - Import both workflow JSON files
+# - Activate workflows
+
+# 5. Run data ingestion workflow in N8N
+# - Open "Data Ingestion - MongoDB to Qdrant" workflow
+# - Click "Execute Workflow"
+# - Verify data loaded into Qdrant
+
+# 6. Test the system
+curl -X POST http://localhost:5678/webhook/chat \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_name": "Test User",
+    "message": "Tell me about THERMOTECH heaters"
+  }'
+
+# 7. Access UIs
+# - Product Management: http://localhost/products
+# - Chat Monitor: http://localhost/chat
+```
+
 ## 🔧 N8N Workflows
 
 ### 1. Data Ingestion (MongoDB → Qdrant)
