@@ -1,0 +1,6 @@
+{
+  "name": "RAG Chat Endpoint",
+  "nodes": [],
+  "connections": {},
+  "note": "Import your existing chat workflow (the second one you provided) here. It already uses PostgreSQL which is perfect."
+}

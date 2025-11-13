@@ -1,0 +1,151 @@
+{
+  "name": "Data Ingestion - MongoDB to Qdrant",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "When clicking Execute Workflow",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "operation": "aggregate",
+        "collection": "products",
+        "query": "[\n  {\n    \"$lookup\": {\n      \"from\": \"brands\",\n      \"localField\": \"brandId\",\n      \"foreignField\": \"_id\",\n      \"as\": \"brand\"\n    }\n  },\n  {\n    \"$lookup\": {\n      \"from\": \"product_categories\",\n      \"localField\": \"categoryId\",\n      \"foreignField\": \"_id\",\n      \"as\": \"category\"\n    }\n  },\n  {\n    \"$unwind\": \"$brand\"\n  },\n  {\n    \"$unwind\": \"$category\"\n  },\n  {\n    \"$match\": {\n      \"isActive\": true\n    }\n  },\n  {\n    \"$project\": {\n      \"ContentType\": { \"$literal\": \"Product\" },\n      \"ContentID\": { \"$toString\": \"$_id\" },\n      \"ProductID\": { \"$toString\": \"$_id\" },\n      \"ModelCode\": \"$modelCode\",\n      \"ProductName\": \"$name\",\n      \"BrandName\": \"$brand.name\",\n      \"CategoryName\": \"$category.name\",\n      \"DocumentTitle\": { \"$literal\": \"Ürün Kataloğu\" },\n      \"Title\": \"$name\",\n      \"Content\": {\n        \"$concat\": [\n          \"$brand.name\",\n          \" \",\n          \"$name\",\n          \" (Model: \",\n          \"$modelCode\",\n          \"). Kategori: \",\n          \"$category.name\",\n          \". \",\n          { \"$ifNull\": [\"$description\", \"Kaliteli ürün.\"] }\n        ]\n      },\n      \"IsImportant\": { \"$literal\": true },\n      \"IsSafetyRelated\": { \"$literal\": false },\n      \"SearchWeight\": { \"$literal\": 90.0 },\n      \"VideoURL\": null\n    }\n  }\n]"
+      },
+      "id": "load-mongodb",
+      "name": "Load from MongoDB",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1,
+      "position": [460, 300],
+      "credentials": {
+        "mongoDb": {
+          "id": "1",
+          "name": "MongoDB Product Catalog"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const formattedItems = [];\n\nfor (const item of $input.all()) {\n  const data = item.json;\n  \n  const pageContent = data.Content || '';\n  \n  formattedItems.push({\n    json: {\n      pageContent: pageContent,\n      metadata: {\n        sourceId: `${data.ContentType}_${data.ContentID}`,\n        contentId: data.ContentID,\n        contentType: data.ContentType,\n        productId: data.ProductID,\n        modelCode: data.ModelCode,\n        brandName: data.BrandName,\n        categoryName: data.CategoryName,\n        productName: data.ProductName,\n        title: data.Title,\n        documentTitle: data.DocumentTitle,\n        searchWeight: parseFloat(data.SearchWeight) || 90.0,\n        isImportant: Boolean(data.IsImportant),\n        isSafetyRelated: Boolean(data.IsSafetyRelated),\n        videoURL: data.VideoURL || null\n      }\n    }\n  });\n}\n\nconsole.log('Formatted:', formattedItems.length, 'items');\nreturn formattedItems;"
+      },
+      "id": "format-data",
+      "name": "Format Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $credentials.googleGeminiApi.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"models/gemini-embedding-001\",\n  \"content\": {\n    \"parts\": [\n      {\n        \"text\": {{ JSON.stringify($json.pageContent) }}\n      }\n    ]\n  }\n}",
+        "options": {}
+      },
+      "id": "get-embedding",
+      "name": "Get Embedding from Gemini",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const mergedItems = [];\nconst inputItems = $input.all();\nconst formatDataItems = $('Format Data').all();\n\nfor (let i = 0; i < inputItems.length; i++) {\n  const item = inputItems[i];\n  const embedding = item.json.embedding?.values || [];\n  const originalData = formatDataItems[i].json;\n  \n  const pointId = i + 1;\n  \n  mergedItems.push({\n    json: {\n      id: pointId,\n      vector: embedding,\n      payload: {\n        content: originalData.pageContent,\n        metadata: originalData.metadata\n      }\n    }\n  });\n}\n\nconsole.log('Merged:', mergedItems.length, 'points');\nreturn mergedItems;"
+      },
+      "id": "merge-embedding",
+      "name": "Merge Embedding & Metadata",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\n\nconst qdrantBatch = {\n  points: items.map(item => {\n    const data = item.json;\n    return {\n      id: data.id,\n      vector: data.vector,\n      payload: data.payload\n    };\n  })\n};\n\nconsole.log('Qdrant batch prepared:', qdrantBatch.points.length, 'points');\nreturn [{ json: qdrantBatch }];"
+      },
+      "id": "prepare-batch",
+      "name": "Prepare Qdrant Batch",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1340, 300]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=http://qdrant:6333/collections/rag_docs_gemini_3072_metadata/points",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {}
+      },
+      "id": "insert-qdrant",
+      "name": "Insert to Qdrant",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "const totalPoints = $input.all().length;\nconst samplePoint = $input.first().json;\n\nreturn [{\n  json: {\n    status: 'SUCCESS',\n    message: `Successfully inserted ${totalPoints} points to Qdrant`,\n    totalPoints: totalPoints,\n    vectorDimension: samplePoint.vector?.length || 0,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "summary",
+      "name": "Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 300]
+    }
+  ],
+  "connections": {
+    "When clicking Execute Workflow": {
+      "main": [[{ "node": "Load from MongoDB", "type": "main", "index": 0 }]]
+    },
+    "Load from MongoDB": {
+      "main": [[{ "node": "Format Data", "type": "main", "index": 0 }]]
+    },
+    "Format Data": {
+      "main": [[{ "node": "Get Embedding from Gemini", "type": "main", "index": 0 }]]
+    },
+    "Get Embedding from Gemini": {
+      "main": [[{ "node": "Merge Embedding & Metadata", "type": "main", "index": 0 }]]
+    },
+    "Merge Embedding & Metadata": {
+      "main": [[{ "node": "Prepare Qdrant Batch", "type": "main", "index": 0 }]]
+    },
+    "Prepare Qdrant Batch": {
+      "main": [[{ "node": "Insert to Qdrant", "type": "main", "index": 0 }]]
+    },
+    "Insert to Qdrant": {
+      "main": [[{ "node": "Summary", "type": "main", "index": 0 }]]
+    }
+  },
+  "pinData": {},
+  "settings": {},
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-13T00:00:00.000Z",
+  "versionId": "1"
+}

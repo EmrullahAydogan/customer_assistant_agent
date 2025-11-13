@@ -1,0 +1,207 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # DATABASES
+  # ============================================
+
+  # PostgreSQL - Chat History & Analytics
+  postgres:
+    image: postgres:15-alpine
+    container_name: chat_postgres
+    environment:
+      POSTGRES_DB: chat_database
+      POSTGRES_USER: chat_user
+      POSTGRES_PASSWORD: chat_password_2024
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chat_user -d chat_database"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # MongoDB - Product Catalog
+  mongodb:
+    image: mongo:7.0
+    container_name: product_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: mongo_password_2024
+      MONGO_INITDB_DATABASE: product_catalog
+    volumes:
+      - mongodb_data:/data/db
+      - ./database/mongodb/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    ports:
+      - "27017:27017"
+    networks:
+      - app_network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Qdrant - Vector Database for RAG
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant_vector_db
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # N8N WORKFLOW AUTOMATION
+  # ============================================
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n_workflows
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=n8n_admin_2024
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678
+      - GENERIC_TIMEZONE=Europe/Istanbul
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_DATABASE=n8n_database
+      - DB_POSTGRESDB_USER=chat_user
+      - DB_POSTGRESDB_PASSWORD=chat_password_2024
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/home/node/.n8n/workflows
+    networks:
+      - app_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ============================================
+  # BACKEND API
+  # ============================================
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: backend_api
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=chat_database
+      - POSTGRES_USER=chat_user
+      - POSTGRES_PASSWORD=chat_password_2024
+      - MONGODB_URI=mongodb://admin:mongo_password_2024@mongodb:27017/product_catalog?authSource=admin
+      - QDRANT_URL=http://qdrant:6333
+      - N8N_WEBHOOK_URL=http://n8n:5678/webhook
+      - CORS_ORIGIN=http://localhost:80
+    ports:
+      - "3000:3000"
+    networks:
+      - app_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # FRONTEND - Product Management
+  # ============================================
+
+  frontend_products:
+    build:
+      context: ./frontend/product-management
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=http://localhost:3000/api
+    container_name: frontend_product_management
+    ports:
+      - "3001:80"
+    networks:
+      - app_network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ============================================
+  # FRONTEND - Chat Monitor
+  # ============================================
+
+  frontend_chat:
+    build:
+      context: ./frontend/chat-monitor
+      dockerfile: Dockerfile
+      args:
+        - REACT_APP_API_URL=http://localhost:3000/api
+    container_name: frontend_chat_monitor
+    ports:
+      - "3002:80"
+    networks:
+      - app_network
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ============================================
+  # NGINX - Reverse Proxy
+  # ============================================
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx_proxy
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - "80:80"
+    networks:
+      - app_network
+    depends_on:
+      - backend
+      - frontend_products
+      - frontend_chat
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  mongodb_data:
+  qdrant_data:
+  n8n_data:
+
+networks:
+  app_network:
+    driver: bridge
