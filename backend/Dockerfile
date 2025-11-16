@@ -9,10 +9,13 @@ WORKDIR /app
 
 # Install dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --production
 
 # Copy source code
 COPY src ./src
+
+# Create logs directory
+RUN mkdir -p /app/logs
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \

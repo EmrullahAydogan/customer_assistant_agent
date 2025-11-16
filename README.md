@@ -353,11 +353,11 @@ After running `./setup.sh`, complete these 3 steps:
 #### 1. Create Qdrant Collection
 
 ```bash
-curl -X PUT http://localhost:6333/collections/rag_docs_gemini_768_metadata \
+curl -X PUT http://localhost:6333/collections/rag_docs_gemini_3072_metadata \
   -H "Content-Type: application/json" \
   -d '{
     "vectors": {
-      "size": 768,
+      "size": 3072,
       "distance": "Cosine"
     }
   }'
@@ -586,11 +586,11 @@ docker-compose exec backend ping mongodb
 ### Create Qdrant Collection
 
 ```bash
-curl -X PUT http://localhost:6333/collections/rag_docs_gemini_768_metadata \
+curl -X PUT http://localhost:6333/collections/rag_docs_gemini_3072_metadata \
   -H "Content-Type: application/json" \
   -d '{
     "vectors": {
-      "size": 768,
+      "size": 3072,
       "distance": "Cosine"
     }
   }'

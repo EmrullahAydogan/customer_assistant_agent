@@ -243,9 +243,17 @@ router.get('/', async (req, res) => {
       product.categoryName = category?.name;
     }
 
+    // Serialize to plain JSON to convert Decimal128
+    const serializedResult = JSON.parse(JSON.stringify(result, (key, value) => {
+      if (value && value.$numberDecimal) {
+        return parseFloat(value.$numberDecimal);
+      }
+      return value;
+    }));
+
     res.json({
       success: true,
-      data: result,
+      data: serializedResult,
       pagination: {
         page: parseInt(page),
         limit: parseInt(limit),
@@ -287,14 +295,24 @@ router.get('/:id', async (req, res) => {
       specs.find({ productId: product._id }).toArray()
     ]);
 
+    const productData = {
+      ...product,
+      brandName: brand?.name,
+      categoryName: category?.name,
+      specifications
+    };
+
+    // Serialize to plain JSON to convert Decimal128
+    const serializedProduct = JSON.parse(JSON.stringify(productData, (key, value) => {
+      if (value && value.$numberDecimal) {
+        return parseFloat(value.$numberDecimal);
+      }
+      return value;
+    }));
+
     res.json({
       success: true,
-      data: {
-        ...product,
-        brandName: brand?.name,
-        categoryName: category?.name,
-        specifications
-      }
+      data: serializedProduct
     });
   } catch (error) {
     logger.error('Error fetching product:', error);

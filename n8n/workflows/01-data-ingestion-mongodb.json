@@ -54,7 +54,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"model\": \"models/gemini-embedding-001\",\n  \"content\": {\n    \"parts\": [\n      {\n        \"text\": {{ JSON.stringify($json.pageContent) }}\n      }\n    ]\n  }\n}",
+        "jsonBody": "={\n  \"model\": \"models/gemini-embedding-001\",\n  \"content\": {\n    \"parts\": [\n      {\n        \"text\": {{ JSON.stringify($json.pageContent) }}\n      }\n    ]\n  },\n  \"output_dimensionality\": 3072\n}",
         "options": {}
       },
       "id": "get-embedding",
@@ -86,7 +86,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=http://qdrant:6333/collections/rag_docs_gemini_768_metadata/points",
+        "url": "=http://qdrant:6333/collections/rag_docs_gemini_3072_metadata/points",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
