@@ -8,7 +8,7 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "webhook-trigger",
+      "id": "55d33ed4-b67a-4aa8-a901-5d96d5a4e399",
       "name": "Webhook - Chat Request",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1.1,
@@ -22,7 +22,7 @@
       "parameters": {
         "jsCode": "// Extract and validate input\nconst body = $input.first().json.body;\n\nconst customerId = body.customer_id || `GUEST_${Date.now()}`;\nconst customerName = body.customer_name || 'Guest';\nconst message = body.message;\nconst conversationId = body.conversation_id || null;\nconst metadata = {\n  platform: body.platform || 'web',\n  category: body.category || 'general',\n  priority: body.priority || 'medium',\n  customerEmail: body.customer_email || null,\n  customerContact: body.customer_contact || null\n};\n\nif (!message || message.trim() === '') {\n  throw new Error('Message is required');\n}\n\nconsole.log('=== INCOMING CHAT REQUEST ===');\nconsole.log('Customer:', customerName, '(' + customerId + ')');\nconsole.log('Message:', message);\nconsole.log('Conversation ID:', conversationId || 'NEW');\nconsole.log('===========================');\n\nreturn [{\n  json: {\n    customerId,\n    customerName,\n    message: message.trim(),\n    conversationId,\n    metadata,\n    timestamp: new Date().toISOString()\n  }\n}];"
       },
-      "id": "validate-input",
+      "id": "ec6b9897-b9af-4ac6-a210-00aff9d9f6b4",
       "name": "Validate & Parse Input",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -51,7 +51,7 @@
         "jsonBody": "={\n  \"model\": \"models/gemini-embedding-001\",\n  \"content\": {\n    \"parts\": [\n      {\n        \"text\": {{ JSON.stringify($json.message) }}\n      }\n    ]\n  },\n  \"output_dimensionality\": 3072\n}",
         "options": {}
       },
-      "id": "generate-query-embedding",
+      "id": "2a4091a7-9967-4755-a677-1811b7752252",
       "name": "Generate Query Embedding",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -84,7 +84,7 @@
         "jsonBody": "={\n  \"vector\": {{ JSON.stringify($json.embedding.values) }},\n  \"limit\": 5,\n  \"with_payload\": true,\n  \"score_threshold\": 0.7\n}",
         "options": {}
       },
-      "id": "search-qdrant",
+      "id": "5ff6b7df-fcb7-4493-bbcd-d08bbf7e0776",
       "name": "Search Qdrant for Context",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -97,7 +97,7 @@
       "parameters": {
         "jsCode": "// Get original message from earlier node\nconst inputData = $('Validate & Parse Input').first().json;\nconst searchResults = $input.first().json.result || [];\n\nlet contextText = '';\nlet sources = [];\n\nif (searchResults.length > 0) {\n  contextText = searchResults.map((result, index) => {\n    const payload = result.payload;\n    const score = result.score;\n    \n    // Add to sources for reference\n    sources.push({\n      productName: payload.productName,\n      modelCode: payload.modelCode,\n      brandName: payload.brandName,\n      categoryName: payload.categoryName,\n      title: payload.title,\n      score: score\n    });\n    \n    return `[${index + 1}] ${payload.brandName} ${payload.productName} (${payload.modelCode})\n${payload.documentTitle}: ${payload.title}\n${payload.pageContent || payload.content}\n---`;\n  }).join('\\n\\n');\n}\n\nconsole.log('=== CONTEXT PREPARED ===');\nconsole.log('Found:', searchResults.length, 'relevant documents');\nconsole.log('Context length:', contextText.length, 'characters');\nconsole.log('=======================');\n\nreturn [{\n  json: {\n    ...inputData,\n    contextText,\n    sources,\n    hasContext: searchResults.length > 0\n  }\n}];"
       },
-      "id": "prepare-context",
+      "id": "a18d8a76-221b-40f4-ba96-b860188ebdf8",
       "name": "Prepare Context for AI",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -126,7 +126,7 @@
         "jsonBody": "={{ {\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": `You are a helpful customer support assistant for a heating products company.\n\n${$json.hasContext ? 'PRODUCT INFORMATION:\\n' + $json.contextText + '\\n\\n' : 'No specific product information found in database.\\n\\n'}\n\nCUSTOMER QUESTION:\n${$json.message}\n\nINSTRUCTIONS:\n- Answer in English\n- Be helpful, friendly, and professional\n- Use the product information above if relevant\n- If you don't have information, say so honestly\n- Keep responses concise and clear\n- Include product model codes when relevant\n\nYour answer:`\n    }]\n  }],\n  \"generationConfig\": {\n    \"temperature\": 0.7,\n    \"topP\": 0.8,\n    \"topK\": 40,\n    \"maxOutputTokens\": 1024\n  }\n} }}",
         "options": {}
       },
-      "id": "generate-answer",
+      "id": "6ed9af7b-fb3c-4913-bc1c-192e5167a4a3",
       "name": "Generate AI Answer",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
@@ -145,7 +145,7 @@
       "parameters": {
         "jsCode": "const contextData = $('Prepare Context for AI').first().json;\nconst aiResponse = $input.first().json;\n\n// Extract AI answer\nconst answer = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate a response.';\nconst tokensUsed = aiResponse.usageMetadata?.totalTokenCount || 0;\n\nconsole.log('=== AI RESPONSE ===');\nconsole.log('Answer length:', answer.length, 'characters');\nconsole.log('Tokens used:', tokensUsed);\nconsole.log('==================');\n\nreturn [{\n  json: {\n    ...contextData,\n    aiAnswer: answer,\n    tokensUsed,\n    aiMetadata: {\n      model: 'gemini-2.0-flash-exp',\n      totalTokens: tokensUsed,\n      finishReason: aiResponse.candidates?.[0]?.finishReason || 'unknown'\n    }\n  }\n}];"
       },
-      "id": "extract-answer",
+      "id": "a3da4263-efba-44d8-974f-903914b16293",
       "name": "Extract Answer",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -157,9 +157,10 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=-- Create or get conversation\nWITH conv AS (\n  {{ $json.conversationId ? \n     `SELECT conversation_id, total_messages FROM conversations WHERE conversation_id = '${$json.conversationId}'`\n     :\n     `INSERT INTO conversations (customer_id, customer_name, platform, category, priority, status, sentiment, customer_email, customer_contact)\n      VALUES ('${$json.customerId}', '${$json.customerName.replace(/'/g, \"''\")}', '${$json.metadata.platform}', '${$json.metadata.category}', '${$json.metadata.priority}', 'active', 'neutral', ${$json.metadata.customerEmail ? \"'\" + $json.metadata.customerEmail + \"'\" : 'NULL'}, ${$json.metadata.customerContact ? \"'\" + $json.metadata.customerContact + \"'\" : 'NULL'})\n      RETURNING conversation_id, total_messages`\n  }}\n)\n-- Insert user message\nINSERT INTO messages (conversation_id, role, content, tokens_used, response_time_ms)\nSELECT conversation_id, 'user', '{{ $json.message.replace(/'/g, \"''\") }}', NULL, NULL\nFROM conv\nRETURNING conversation_id, message_id, created_at;"
+        "query": "-- Create or get conversation\nWITH conv AS (\n  {{ $json.conversationId ? \n     `SELECT conversation_id, total_messages FROM conversations WHERE conversation_id = '${$json.conversationId}'`\n     :\n     `INSERT INTO conversations (customer_id, customer_name, platform, category, priority, status, sentiment, customer_email, customer_contact)\n      VALUES ('${$json.customerId}', '${$json.customerName.replace(/'/g, \"''\")}', '${$json.metadata.platform}', '${$json.metadata.category}', '${$json.metadata.priority}', 'active', 'neutral', ${$json.metadata.customerEmail ? \"'\" + $json.metadata.customerEmail + \"'\" : 'NULL'}, ${$json.metadata.customerContact ? \"'\" + $json.metadata.customerContact + \"'\" : 'NULL'})\n      RETURNING conversation_id, total_messages`\n  }}\n)\n-- Insert user message\nINSERT INTO messages (conversation_id, role, content, tokens_used, response_time_ms)\nSELECT conversation_id, 'user', '{{ $json.message.replace(/'/g, \"''\") }}', NULL, NULL\nFROM conv\nRETURNING conversation_id, id, created_at;",
+        "options": {}
       },
-      "id": "save-user-message",
+      "id": "85dfa5c3-41b3-4ca6-a567-d8b959ed9080",
       "name": "Save User Message to PostgreSQL",
       "type": "n8n-nodes-base.postgres",
       "position": [
@@ -177,9 +178,10 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "=-- Insert AI response\nINSERT INTO messages (conversation_id, role, content, model_used, tokens_used, response_time_ms)\nVALUES (\n  '{{ $('Save User Message to PostgreSQL').first().json.conversation_id }}',\n  'assistant',\n  '{{ $json.aiAnswer.replace(/'/g, \"''\") }}',\n  '{{ $json.aiMetadata.model }}',\n  {{ $json.tokensUsed }},\n  {{ Date.now() - new Date($json.timestamp).getTime() }}\n)\nRETURNING message_id, created_at;"
+        "query": "-- Insert AI response\nINSERT INTO messages (conversation_id, role, content, model_used, tokens_used, response_time_ms)\nVALUES (\n  '{{ $('Save User Message to PostgreSQL').first().json.conversation_id }}',\n  'assistant',\n  '{{ $json.aiAnswer.replace(/'/g, \"''\") }}',\n  '{{ $json.aiMetadata.model }}',\n  {{ $json.tokensUsed }},\n  {{ Date.now() - new Date($json.timestamp).getTime() }}\n)\nRETURNING id, created_at;",
+        "options": {}
       },
-      "id": "save-ai-message",
+      "id": "f13bb406-875e-4b52-baa9-11fbaaa33d02",
       "name": "Save AI Response to PostgreSQL",
       "type": "n8n-nodes-base.postgres",
       "position": [
@@ -198,7 +200,7 @@
       "parameters": {
         "jsCode": "const extractedData = $('Extract Answer').first().json;\nconst userMsgResult = $('Save User Message to PostgreSQL').first().json;\nconst responseTimeMs = Date.now() - new Date(extractedData.timestamp).getTime();\n\nconst response = {\n  success: true,\n  conversation_id: userMsgResult.conversation_id,\n  response: extractedData.aiAnswer,\n  metadata: {\n    total_messages: (userMsgResult.total_messages || 0) + 2, // +2 for user + AI messages\n    tokens_used: extractedData.tokensUsed,\n    response_time_ms: responseTimeMs,\n    model: extractedData.aiMetadata.model,\n    sources_found: extractedData.sources.length,\n    has_context: extractedData.hasContext\n  },\n  sources: extractedData.sources.slice(0, 3) // Top 3 sources\n};\n\nconsole.log('=== FINAL RESPONSE ===');\nconsole.log('Conversation ID:', response.conversation_id);\nconsole.log('Response time:', responseTimeMs, 'ms');\nconsole.log('Tokens:', extractedData.tokensUsed);\nconsole.log('======================');\n\nreturn [{ json: response }];"
       },
-      "id": "prepare-final-response",
+      "id": "46b7910c-6d91-4f30-b1fe-55e2153c7082",
       "name": "Prepare Final Response",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -222,26 +224,13 @@
           }
         }
       },
-      "id": "respond-to-webhook",
+      "id": "85dfd0c2-f72d-4eb9-93e4-798f31076c22",
       "name": "Respond to Webhook",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1,
       "position": [
         2220,
         400
-      ]
-    },
-    {
-      "parameters": {
-        "jsCode": "const error = $input.first().json.error || 'Unknown error';\n\nconst errorResponse = {\n  success: false,\n  error: error.message || error,\n  timestamp: new Date().toISOString()\n};\n\nconsole.error('=== ERROR ===');\nconsole.error(error);\nconsole.error('=============');\n\nreturn [{ json: errorResponse }];"
-      },
-      "id": "error-handler",
-      "name": "Error Handler",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        1120,
-        600
       ]
     }
   ],
