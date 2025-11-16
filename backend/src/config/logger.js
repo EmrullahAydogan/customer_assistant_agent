@@ -35,11 +35,11 @@ const logger = winston.createLogger({
 // If not in production, log to files as well
 if (process.env.NODE_ENV === 'production') {
   logger.add(new winston.transports.File({
-    filename: '/var/log/customer-assistant/error.log',
+    filename: '/app/logs/error.log',
     level: 'error'
   }));
   logger.add(new winston.transports.File({
-    filename: '/var/log/customer-assistant/combined.log'
+    filename: '/app/logs/combined.log'
   }));
 }
 
