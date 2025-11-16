@@ -53,7 +53,7 @@ AI-powered customer support system with N8N workflow automation, RAG (Retrieval 
 **Option 1: Using Git Bash (Recommended)**
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/EmrullahAydogan/customer_assistant_agent.git
 cd customer_assistant_agent
 
 # Run setup script
@@ -66,7 +66,7 @@ start http://localhost/customer-chat
 **Option 2: Using PowerShell**
 ```powershell
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/EmrullahAydogan/customer_assistant_agent.git
 cd customer_assistant_agent
 
 # Start all services
@@ -150,7 +150,7 @@ docker-compose ps
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/EmrullahAydogan/customer_assistant_agent.git
 cd customer_assistant_agent
 
 # Make setup script executable
@@ -214,7 +214,7 @@ docker-compose ps
 
 ```bash
 # Clone the repository
-git clone <repository-url>
+git clone https://github.com/EmrullahAydogan/customer_assistant_agent.git
 cd customer_assistant_agent
 
 # Make setup script executable
@@ -253,7 +253,7 @@ After Docker is installed, these commands work on all platforms:
 
 ```bash
 # 1. Clone repository
-git clone <repository-url>
+git clone https://github.com/EmrullahAydogan/customer_assistant_agent.git
 cd customer_assistant_agent
 
 # 2. Start all services
