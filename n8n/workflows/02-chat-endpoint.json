@@ -1,6 +1,379 @@
 {
-  "name": "RAG Chat Endpoint",
-  "nodes": [],
-  "connections": {},
-  "note": "Import your existing chat workflow (the second one you provided) here. It already uses PostgreSQL which is perfect."
+  "name": "RAG Chat Endpoint - Customer Support",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "chat",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook - Chat Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        400
+      ],
+      "webhookId": "customer-chat-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract and validate input\nconst body = $input.first().json.body;\n\nconst customerId = body.customer_id || `GUEST_${Date.now()}`;\nconst customerName = body.customer_name || 'Guest';\nconst message = body.message;\nconst conversationId = body.conversation_id || null;\nconst metadata = {\n  platform: body.platform || 'web',\n  category: body.category || 'general',\n  priority: body.priority || 'medium',\n  customerEmail: body.customer_email || null,\n  customerContact: body.customer_contact || null\n};\n\nif (!message || message.trim() === '') {\n  throw new Error('Message is required');\n}\n\nconsole.log('=== INCOMING CHAT REQUEST ===');\nconsole.log('Customer:', customerName, '(' + customerId + ')');\nconsole.log('Message:', message);\nconsole.log('Conversation ID:', conversationId || 'NEW');\nconsole.log('===========================');\n\nreturn [{\n  json: {\n    customerId,\n    customerName,\n    message: message.trim(),\n    conversationId,\n    metadata,\n    timestamp: new Date().toISOString()\n  }\n}];"
+      },
+      "id": "validate-input",
+      "name": "Validate & Parse Input",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        460,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:embedContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $credentials.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"models/gemini-embedding-001\",\n  \"content\": {\n    \"parts\": [\n      {\n        \"text\": {{ JSON.stringify($json.message) }}\n      }\n    ]\n  }\n}",
+        "options": {}
+      },
+      "id": "generate-query-embedding",
+      "name": "Generate Query Embedding",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        400
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_GEMINI_API_CREDENTIAL_ID",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://qdrant:6333/collections/rag_docs_gemini_768_metadata/points/search",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"vector\": {{ JSON.stringify($json.embedding.values) }},\n  \"limit\": 5,\n  \"with_payload\": true,\n  \"score_threshold\": 0.7\n}",
+        "options": {}
+      },
+      "id": "search-qdrant",
+      "name": "Search Qdrant for Context",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        900,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get original message from earlier node\nconst inputData = $('Validate & Parse Input').first().json;\nconst searchResults = $input.first().json.result || [];\n\nlet contextText = '';\nlet sources = [];\n\nif (searchResults.length > 0) {\n  contextText = searchResults.map((result, index) => {\n    const payload = result.payload;\n    const score = result.score;\n    \n    // Add to sources for reference\n    sources.push({\n      productName: payload.productName,\n      modelCode: payload.modelCode,\n      brandName: payload.brandName,\n      categoryName: payload.categoryName,\n      title: payload.title,\n      score: score\n    });\n    \n    return `[${index + 1}] ${payload.brandName} ${payload.productName} (${payload.modelCode})\n${payload.documentTitle}: ${payload.title}\n${payload.pageContent || payload.content}\n---`;\n  }).join('\\n\\n');\n}\n\nconsole.log('=== CONTEXT PREPARED ===');\nconsole.log('Found:', searchResults.length, 'relevant documents');\nconsole.log('Context length:', contextText.length, 'characters');\nconsole.log('=======================');\n\nreturn [{\n  json: {\n    ...inputData,\n    contextText,\n    sources,\n    hasContext: searchResults.length > 0\n  }\n}];"
+      },
+      "id": "prepare-context",
+      "name": "Prepare Context for AI",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "googlePalmApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "key",
+              "value": "={{ $credentials.apiKey }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ {\n  \"contents\": [{\n    \"parts\": [{\n      \"text\": `You are a helpful customer support assistant for a heating products company.\n\n${$json.hasContext ? 'PRODUCT INFORMATION:\\n' + $json.contextText + '\\n\\n' : 'No specific product information found in database.\\n\\n'}\n\nCUSTOMER QUESTION:\n${$json.message}\n\nINSTRUCTIONS:\n- Answer in English\n- Be helpful, friendly, and professional\n- Use the product information above if relevant\n- If you don't have information, say so honestly\n- Keep responses concise and clear\n- Include product model codes when relevant\n\nYour answer:`\n    }]\n  }],\n  \"generationConfig\": {\n    \"temperature\": 0.7,\n    \"topP\": 0.8,\n    \"topK\": 40,\n    \"maxOutputTokens\": 1024\n  }\n} }}",
+        "options": {}
+      },
+      "id": "generate-answer",
+      "name": "Generate AI Answer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1340,
+        400
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "YOUR_GEMINI_API_CREDENTIAL_ID",
+          "name": "Google Gemini API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const contextData = $('Prepare Context for AI').first().json;\nconst aiResponse = $input.first().json;\n\n// Extract AI answer\nconst answer = aiResponse.candidates?.[0]?.content?.parts?.[0]?.text || 'Sorry, I could not generate a response.';\nconst tokensUsed = aiResponse.usageMetadata?.totalTokenCount || 0;\n\nconsole.log('=== AI RESPONSE ===');\nconsole.log('Answer length:', answer.length, 'characters');\nconsole.log('Tokens used:', tokensUsed);\nconsole.log('==================');\n\nreturn [{\n  json: {\n    ...contextData,\n    aiAnswer: answer,\n    tokensUsed,\n    aiMetadata: {\n      model: 'gemini-2.0-flash-exp',\n      totalTokens: tokensUsed,\n      finishReason: aiResponse.candidates?.[0]?.finishReason || 'unknown'\n    }\n  }\n}];"
+      },
+      "id": "extract-answer",
+      "name": "Extract Answer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1560,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=-- Create or get conversation\nWITH conv AS (\n  {{ $json.conversationId ? \n     `SELECT conversation_id, message_count FROM conversations WHERE conversation_id = '${$json.conversationId}'`\n     :\n     `INSERT INTO conversations (customer_id, customer_name, platform, category, priority, status, sentiment, customer_email, customer_contact)\n      VALUES ('${$json.customerId}', '${$json.customerName.replace(/'/g, \"''\")}', '${$json.metadata.platform}', '${$json.metadata.category}', '${$json.metadata.priority}', 'active', 'neutral', ${$json.metadata.customerEmail ? \"'\" + $json.metadata.customerEmail + \"'\" : 'NULL'}, ${$json.metadata.customerContact ? \"'\" + $json.metadata.customerContact + \"'\" : 'NULL'})\n      RETURNING conversation_id, message_count`\n  }}\n)\n-- Insert user message\nINSERT INTO messages (conversation_id, role, content, tokens_used, response_time_ms)\nSELECT conversation_id, 'user', '{{ $json.message.replace(/'/g, \"''\") }}', NULL, NULL\nFROM conv\nRETURNING conversation_id, message_id, created_at;"
+      },
+      "id": "save-user-message",
+      "name": "Save User Message to PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1780,
+        300
+      ],
+      "typeVersion": 2.4,
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "PostgreSQL - Chat Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "=-- Insert AI response\nINSERT INTO messages (conversation_id, role, content, model_used, tokens_used, response_time_ms)\nVALUES (\n  '{{ $('Save User Message to PostgreSQL').first().json.conversation_id }}',\n  'assistant',\n  '{{ $json.aiAnswer.replace(/'/g, \"''\") }}',\n  '{{ $json.aiMetadata.model }}',\n  {{ $json.tokensUsed }},\n  {{ Date.now() - new Date($json.timestamp).getTime() }}\n)\nRETURNING message_id, created_at;"
+      },
+      "id": "save-ai-message",
+      "name": "Save AI Response to PostgreSQL",
+      "type": "n8n-nodes-base.postgres",
+      "position": [
+        1780,
+        500
+      ],
+      "typeVersion": 2.4,
+      "credentials": {
+        "postgres": {
+          "id": "YOUR_POSTGRES_CREDENTIAL_ID",
+          "name": "PostgreSQL - Chat Database"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const extractedData = $('Extract Answer').first().json;\nconst userMsgResult = $('Save User Message to PostgreSQL').first().json;\nconst responseTimeMs = Date.now() - new Date(extractedData.timestamp).getTime();\n\nconst response = {\n  success: true,\n  conversation_id: userMsgResult.conversation_id,\n  response: extractedData.aiAnswer,\n  metadata: {\n    total_messages: userMsgResult.message_count + 2, // +2 for user + AI messages\n    tokens_used: extractedData.tokensUsed,\n    response_time_ms: responseTimeMs,\n    model: extractedData.aiMetadata.model,\n    sources_found: extractedData.sources.length,\n    has_context: extractedData.hasContext\n  },\n  sources: extractedData.sources.slice(0, 3) // Top 3 sources\n};\n\nconsole.log('=== FINAL RESPONSE ===');\nconsole.log('Conversation ID:', response.conversation_id);\nconsole.log('Response time:', responseTimeMs, 'ms');\nconsole.log('Tokens:', extractedData.tokensUsed);\nconsole.log('======================');\n\nreturn [{ json: response }];"
+      },
+      "id": "prepare-final-response",
+      "name": "Prepare Final Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2000,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json, null, 2) }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              }
+            ]
+          }
+        }
+      },
+      "id": "respond-to-webhook",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        2220,
+        400
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const error = $input.first().json.error || 'Unknown error';\n\nconst errorResponse = {\n  success: false,\n  error: error.message || error,\n  timestamp: new Date().toISOString()\n};\n\nconsole.error('=== ERROR ===');\nconsole.error(error);\nconsole.error('=============');\n\nreturn [{ json: errorResponse }];"
+      },
+      "id": "error-handler",
+      "name": "Error Handler",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        600
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook - Chat Request": {
+      "main": [
+        [
+          {
+            "node": "Validate & Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate & Parse Input": {
+      "main": [
+        [
+          {
+            "node": "Generate Query Embedding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Query Embedding": {
+      "main": [
+        [
+          {
+            "node": "Search Qdrant for Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Qdrant for Context": {
+      "main": [
+        [
+          {
+            "node": "Prepare Context for AI",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Context for AI": {
+      "main": [
+        [
+          {
+            "node": "Generate AI Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate AI Answer": {
+      "main": [
+        [
+          {
+            "node": "Extract Answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Answer": {
+      "main": [
+        [
+          {
+            "node": "Save User Message to PostgreSQL",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Save AI Response to PostgreSQL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save User Message to PostgreSQL": {
+      "main": [
+        [
+          {
+            "node": "Prepare Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save AI Response to PostgreSQL": {
+      "main": [
+        [
+          {
+            "node": "Prepare Final Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Final Response": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "staticData": null,
+  "tags": [],
+  "triggerCount": 0,
+  "updatedAt": "2025-01-13T00:00:00.000Z",
+  "versionId": "1",
+  "id": "rag-chat-endpoint",
+  "active": false
 }

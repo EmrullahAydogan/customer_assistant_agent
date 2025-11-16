@@ -86,7 +86,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=http://qdrant:6333/collections/rag_docs_gemini_3072_metadata/points",
+        "url": "=http://qdrant:6333/collections/rag_docs_gemini_768_metadata/points",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
