@@ -662,7 +662,7 @@ All product names, brands, and specifications are purely fictional and do not re
 
 ## 👤 Author
 
-**Your Name**
+**Emrullah AYDOGAN**
 
 ## 📄 License
 
